@@ -1,0 +1,1 @@
+{"params":{"today":{"type":"mysqlDate","allowNull":false,"properties":[],"required":["schedule|pending|get"],"exclude":[],"novalidate":[]}}}

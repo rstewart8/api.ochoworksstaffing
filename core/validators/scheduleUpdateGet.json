@@ -1,0 +1,1 @@
+{"params":{"scheduleId":{"type":"integer","allowNull":false,"properties":[],"required":["schedule|update|get"],"exclude":[],"novalidate":[]}}}

@@ -1,0 +1,30 @@
+<?php
+/**
+*
+*/
+
+require_once(ROOT."/models/exampleModel.php");
+
+class Example {
+	var $Res;
+	var $Logger;
+	var $User;
+	var $CompanyId;
+	var $Example;
+
+	function __construct($db,$logger=null,$user=null){
+		$this->Res = [
+			'status' 		=> 'ok',
+			'message'		=> null,
+			'data'			=> []
+		];
+		$this->Logger = $logger;
+		$this->User = $user;
+		$this->CompanyId = $user['companyid'];
+		$this->Example = new ExampleModel($db,$logger,$user['companyid']);
+	}
+
+	public function main($data=null){
+
+	}
+}

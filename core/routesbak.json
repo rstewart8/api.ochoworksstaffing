@@ -1,0 +1,98 @@
+{
+	"user" :
+	{
+		"get" :
+		{
+			"get" :
+			{
+				"authenticate" : true,
+				"params" :
+				{
+					"id" :
+					{
+						"type" : "integer",
+						"required" : true
+					}
+				}
+			}
+		},
+		"create" :
+		{
+			"post" :
+			{
+				"authenticate" : true,
+				"params" :
+				{
+					"user" :
+					{
+						"type" : "json",
+						"validator" : "user",
+						"required" : true
+					}
+				}
+			}
+		},
+		"update" :
+		{
+			"put" :
+			{
+				"authenticate" : true,
+				"params" :
+				{
+					"user" :
+					{
+						"type" : "json",
+						"validator" : "user",
+						"required" : true
+					}
+				}
+			}
+		},
+		"login" :
+		{
+			"post" :
+			{
+				"authenticate" : false,
+				"params" :
+				{
+					"email" :
+					{
+						"type" : "string",
+						"required" : true
+					},
+					"password" :
+					{
+						"type" : "string",
+						"required" :true
+					},
+					"test" :
+					{
+						"type" : "string",
+						"required" :false
+					}
+				}
+			}
+		}
+	},
+	"admin" : 
+	{
+		"validators" :
+		{
+			"get" :
+			{
+				"authenticate" : true,
+				"params" :
+				{}
+			}
+		},
+		"routes" :
+		{
+			"get" :
+			{
+				"authenticate" : true,
+				"params" :
+				{}
+			}
+		}
+	}
+}

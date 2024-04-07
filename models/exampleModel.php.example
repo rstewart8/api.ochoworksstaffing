@@ -1,0 +1,62 @@
+<?php
+/**
+*
+*/
+class ExampleModel
+{
+	var $Logger;
+    var $Db;
+
+	function __construct($db,$logger=null)
+	{
+		$this->Db = $db;
+		$this->Logger = $logger;
+	}
+
+	function get($someId){
+		$wheres = [];
+        $v = [$staffId];
+
+        $qryData = qryBuilder($data, 'c', 'client');
+
+        $offset = $qryData['offset'] * $qryData['limit'];
+        $wheres = $qryData['wheres'];
+        $separator = $qryData['separator'];
+        $values = array_merge($v, $qryData['values']);
+        $orderBy = ($qryData['order'] != null ? $qryData['order'] : 'c.name ASC');
+        $status = ($qryData['status'] != null ? $qryData['status'] : null);
+
+        $qry = "SELECT c.*";
+        $qry .= " FROM clients AS c";
+        $qry .= " JOIN client_staffs AS cu ON cu.client_id = c.id AND cu.status='active'";
+        $qry .= " WHERE cu.user_id = ?";
+
+        if (count($wheres) > 0) {
+            $qry .= " AND (" . implode(" $separator ", $wheres) . ")";
+        }
+
+        if ($status != null) {
+            $values = array_merge($values, [$status]);
+            $qry .= " AND c.status = ?";
+        } else {
+            $qry .= " AND c.status = 'active'";
+        }
+
+        $c = $this->Db->query($qry, $values);
+        $count = count($c);
+
+        $qry .= " ORDER BY $orderBy";
+        $qry .= " LIMIT $qryData[limit]";
+        $qry .= " OFFSET $qryData[offset];";
+
+        $rows = $this->Db->query($qry, $values);
+
+        $d = [
+            'count' => $count,
+            'clients' => $rows,
+        ];
+
+        return $d;
+	}
+}
+?>

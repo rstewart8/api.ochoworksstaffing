@@ -1,0 +1,1 @@
+{"params":{"id":{"type":"integer","allowNull":false,"properties":[],"required":["schedule|fetch|get"],"exclude":[],"novalidate":[]}}}
