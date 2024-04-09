@@ -151,4 +151,14 @@ class Schedule
 				break;
 		}
 	}
+
+	public function clientReport($data) {
+		$this->Res['data'] = $this->Schedule->clientReport($data);
+		return $this->Res;
+	}
+
+	public function reportData($data) {
+		$this->Res['data'] = $this->Schedule->reportData($data);
+		return $this->Res;
+	}
 }

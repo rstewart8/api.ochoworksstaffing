@@ -1053,4 +1053,170 @@ class ScheduleModel
 
     }
 
+    function clientReport($data) {
+        $d = [
+            'count' => 0,
+            'clients' => [],
+            'requested' => 0,
+            'filled' => 0,
+            'clientList' => [],
+            'requestedList' => [],
+            'filledList' => [],
+            'maxRequested' => 0
+        ];
+
+        date_default_timezone_set($this->User['timezoneloc']);
+        $now = date('Y-m-d');
+
+        $start = array_key_exists('start', $data) ? $data['start'] : $now;
+        $end = array_key_exists('end', $data) ? $data['end'] : $now;
+
+        $v = [$this->CompanyId,$start,$end,$start,$end,$start,$end];
+
+        $qry = "SELECT c.id,c.name";
+        $qry .= ",group_concat(s.id) as schedule_ids,sum(s.employee_cnt) as employee_cnt";
+        $qry .= " FROM clients c";
+        $qry .= " join schedules s on s.client_id = c.id and s.status = 'active'";
+        $qry .= " where s.company_id = ?";
+        $qry .= " and (";
+        $qry .= " (s.start <= ? and s.end >= ?)";
+        $qry .= " or (s.start >= ? and s.start <= ?)";
+        $qry .= " or (s.end >= ? and s.end <= ?)";
+        $qry .= " )";
+        
+
+        $qryData = qryBuilder($data, 'c', 'client');
+
+        $offset = $qryData['offset'] * $qryData['limit'];
+        $wheres = $qryData['wheres'];
+        $separator = $qryData['separator'];
+        $values = array_merge($v, $qryData['values']);
+        $orderBy = ($qryData['order'] != null ? $qryData['order'] : 'c.name asc');
+        $status = ($qryData['status'] != null ? $qryData['status'] : null);
+
+        if (count($wheres) > 0) {
+            $qry .= " AND (" . implode(" $separator ", $wheres) . ")";
+        }
+
+        if ($status != null) {
+            $values = array_merge($values, [$status]);
+            $qry .= " AND c.status = ?";
+        } else {
+            $qry .= " AND c.status = 'active'";
+        }
+
+        $qry .= " group by c.id";
+
+        $rows = $this->Db->query($qry, $values);
+        $count = count($rows);
+
+        $qry .= " ORDER BY $orderBy";
+        $qry .= " LIMIT $qryData[limit]";
+        $qry .= " OFFSET $qryData[offset];";
+
+        $maxReq = 0;
+        $rows = $this->Db->query($qry, $values);
+        foreach ($rows as &$row){
+            $qry = "select id from schedule_assignments where schedule_id in ($row[schedule_ids]) and date between ? and ? and status = 'active'";
+            $rows2 = $this->Db->query($qry,[$start,$end]);
+            $cnt = count($rows2);
+            $empCnt = $row['employee_cnt'];
+            $row['filled'] = $cnt;
+            $d['filled'] += $cnt;
+            $d['requested'] += $empCnt;
+            $d['clientList'][] = $row['name'];
+            $d['requestedList'][] = $empCnt;
+            $d['filledList'][] = $cnt;
+
+            if ($empCnt > $maxReq) {
+                $maxReq = $empCnt;
+            }
+        }
+
+        $d['maxRequested'] = $maxReq;
+        $d['count'] = $count;
+        $d['clients'] = $rows;
+
+        return $d;
+    }
+
+    function reportData($data) {
+        $d = [
+            'attenion' => [],
+            'daysList' => [],
+            'days' => [],
+            'requested' => 0,
+            'filled' => 0,
+            'requestedList' => [],
+            'filledList' => [],
+            'maxRequested' => 0
+        ];
+
+        $start = $data['start'];
+        $end = $data['end'];
+
+        $chk = $start;
+        $chkTs = strtotime($chk);
+        $endTs = strtotime($end);
+        $cntr = 0;
+
+        $daysList = [];
+        $days = [];
+        $scheduleWorkdays = [];
+        $maxReq = 0;
+
+        while ($chkTs <= $endTs && $cntr < 365) {
+            $cntr++;
+            $day = date('Y-m-d', $chkTs);
+
+            $qry = "select sa.date";
+            $qry .= ",s.id as schedule_id,s.employee_cnt as requested";
+            $qry .= " from schedules s";
+            $qry .= " left join schedule_assignments sa on s.id = sa.schedule_id and sa.status = 'active' and sa.date = ?";
+            $qry .= " where (s.start <= ? and s.end >= ?)";
+            $qry .= " and s.company_id = ?";
+            $scheduleIds = [];
+            $requestedCnt = 0;
+            $filledCnt = 0;
+
+            $rows = $this->Db->query($qry,[$day,$day,$day,$this->CompanyId]);
+
+            foreach ($rows as $row) {
+                $scheduleId = $row['schedule_id'];
+                $requested = $row['requested'];
+
+                if (!in_array($scheduleId,$scheduleIds)) {
+                    $workdays = getWorkdays($this->Db,null,null,null,true,$scheduleId);
+                    
+                    $scheduleIds[] = $scheduleId;
+
+                    if (in_array($day,$workdays)) {
+                        $requestedCnt += $requested;
+                    }
+                }
+
+                if ($row['date'] != null) {
+                    $filledCnt++;
+                }
+                $days[] = $row;
+            }
+
+            $d['requested'] += $requestedCnt;
+            $d['filled'] += $filledCnt;
+            $d['requestedList'][] = $requestedCnt;
+            $d['filledList'][] = $filledCnt;
+            $daysList[] = $day;
+
+            if ($requestedCnt > $maxReq) {
+                $maxReq = $requestedCnt;
+            }
+
+            $chkTs = strtotime($day . ' +1 day');
+        }
+        $d['maxRequested'] = $maxReq;
+        $d['daysList'] = $daysList;
+        $d['days'] = $days;
+        return $d;
+    }
+
 }
