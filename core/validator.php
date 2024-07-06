@@ -254,6 +254,49 @@ class Validator
 		}
 	}
 
+	function checkMysqlTime($key, $value)
+	{
+		try {
+			
+			$tArr = explode(':', $value);
+
+			if (count($tArr) != 3) {
+				$this->Errors[] = "$key is invalid";
+				return;
+			}
+
+			$hour = $tArr[0];
+			$minute = $tArr[1];
+			$second = $tArr[2];
+
+			if (strlen($hour) != 2 || strlen($minute) != 2 || strlen($second) != 2) {
+				$this->Errors[] = "$key is invalid";
+				return;
+			}
+
+			$h = (int)$hour;
+			$m = (int)$minute;
+			$s = (int)$second;
+
+			if ($h < 0 || $h > 23) {
+				$this->Errors[] = "$key is invalid";
+				return;
+			}
+
+			if ($m < 0 || $m > 59) {
+				$this->Errors[] = "$key is invalid";
+				return;
+			}
+
+			if ($s < 0 || $s > 59) {
+				$this->Errors[] = "$key is invalid";
+				return;
+			}
+		} catch (\Throwable $th) {
+			$this->Errors[] = "$key is invalid";
+		}
+	}
+
 	function checkCommaSeparatedInts($key, $value)
 	{
 		$arr = explode(',', $value);

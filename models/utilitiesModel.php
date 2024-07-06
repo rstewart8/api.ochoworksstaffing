@@ -99,5 +99,24 @@ class UtilitiesModel
 
 		return $rows;
 	}
+
+	function scheduleTimes(){
+		$chkTs = strtotime('00:00:00');
+		$endTs = strtotime('23:59:59');
+		$cntr = 0;
+		$d = [];
+
+		while ($chkTs <= $endTs && $cntr < 100) {
+			$cntr++;
+			$time = date('H:i:s', $chkTs);
+			$t = date('g:i a', $chkTs);
+
+			$tmp = ['time' => $time, 'prettyTime' => $t];
+			$d[] = $tmp;
+			$chkTs = strtotime($time . ' +15 minute');
+		}
+
+		return $d;
+	}
 }
 ?>

@@ -144,4 +144,11 @@ class Utilities
         $ret['data'] = $this->Utilities->workdays();
         return $ret;
     }
+
+    function scheduleTimes($data=null){
+        $ret = array('status' => 'ok', 'message' => '', 'data' => '');
+
+        $ret['data'] = $this->Utilities->scheduleTimes();
+        return $ret;
+    }
 }
