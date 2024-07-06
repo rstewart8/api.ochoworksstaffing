@@ -357,7 +357,7 @@ $data['fileNames'] = $fileNames;
 			</div>
 			<span ng-repeat="(key,value) in param.params" ng-show="showParam[$parent.$index]">
 				<div ng-if="key === 'type'" class="row" style="margin-left:25px;padding-top:5px;">
-					<span>Types: integer,string,password,email,codestr,namestr,array,mysqlDate,mysqlDateTime</span>
+					<span>Types: integer,string,password,email,codestr,namestr,array,mysqlDate,mysqlDateTime,mysqlTime</span>
 				</div>
 				<div ng-if="key === 'type'" class="row" style="margin-left:25px;padding-top:5px;">
 					<div class="col-xs-12 col-sm-2">

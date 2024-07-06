@@ -433,3 +433,9 @@ function assignedPercentage($filled,$days) {
 	return $filledPerc;
 }
 
+function sanitizeForMySQL($input) {
+    // Remove characters that might be harmful in MySQL
+    $sanitized = preg_replace('/[^\w\s@.-]/', '', $input);
+    return $sanitized;
+}
+

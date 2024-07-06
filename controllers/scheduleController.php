@@ -152,13 +152,20 @@ class Schedule
 		}
 	}
 
-	public function clientReport($data) {
-		$this->Res['data'] = $this->Schedule->clientReport($data);
+	public function clientReportByDay($data) {
+		$this->Res['data'] = $this->Schedule->clientReportByDay($data);
 		return $this->Res;
 	}
 
 	public function reportData($data) {
-		$this->Res['data'] = $this->Schedule->reportData($data);
+		$this->Res['code'] = 500;
+		$this->Res['status'] = 'error';
+		$this->Res['message'] = 'Returns garbage data.';
+		return $this->Res;
+	}
+
+	public function scheduleStatusByRange($data) {
+		$this->Res['data'] = $this->Schedule->scheduleStatusByRange($data);
 		return $this->Res;
 	}
 }
