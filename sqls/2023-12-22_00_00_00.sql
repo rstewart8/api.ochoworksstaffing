@@ -203,10 +203,10 @@ ALTER TABLE `schedules`
 ADD COLUMN `workday_id` INT NOT NULL AFTER `job_id`;
 
 ALTER TABLE `users` 
-ADD COLUMN `sex` VARCHAR(8) NULL DEFAULT 'male' AFTER `password`;
+ADD COLUMN `gender` VARCHAR(8) NULL DEFAULT 'male' AFTER `password`;
 
 ALTER TABLE `users` 
-ADD COLUMN `photo` VARCHAR(64) NOT NULL DEFAULT 'default-avatar.png' AFTER `sex`;
+ADD COLUMN `photo` VARCHAR(64) NOT NULL DEFAULT 'default-avatar.png' AFTER `gender`;
 
 UPDATE `holidays` SET `date` = '*yr*-01-01' WHERE (`id` = '1');
 UPDATE `holidays` SET `date` = '*yr*-07-04' WHERE (`id` = '6');

@@ -1,0 +1,1 @@
+{"params":{"userId":{"type":"integer","allowNull":false,"properties":[],"required":["employee|workDays|post"],"exclude":[],"novalidate":[]},"weekdayIds":{"type":"array","allowNull":false,"properties":{"arrayItemType":"integer"},"required":[],"exclude":[],"novalidate":[]}}}

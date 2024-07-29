@@ -22,6 +22,23 @@ class EmployeeModel
         $this->Schedule = $schedule;
 	}
 
+    function isFieldValueUnique($field, $value, $id = null)
+    {
+        $values = [$this->CompanyId, $value];
+        $qry = "select id from users where company_id = ? and status != 'deleted' and $field = ?";
+
+        if ($id != null) {
+            $qry .= " and id != ?";
+            array_push($values, $id);
+        }
+
+        if (count($this->Db->query($qry, $values)) > 0) {
+            return false;
+        }
+
+        return true;
+    }
+
 	function forSchedule($data=null){
         $scheduleId = (array_key_exists('scheduleId', $data)) ? $data['schedule'] : null;
 
@@ -307,5 +324,253 @@ class EmployeeModel
 
         return ['days' => $rows];
     }
+
+    function fetch($data){
+        $d = [
+            'employee' => []
+        ];
+
+        $userId = $data['id'];
+        $values = [$this->CompanyId,$userId];
+
+        $qry = "SELECT u.id, u.firstname, u.lastname, u.address, u.city, u.state, u.zip, u.email, u.phone, u.cell, u.gender, u.photo, u.timezone_id, u.status ";
+        $qry .= " , t.name as timezone";
+        $qry .= " , s.name as statename";
+        $qry .= " FROM users u";
+        $qry .= " LEFT JOIN timezones t on t.id = u.timezone_id";
+        $qry .= " LEFT JOIN states s on s.abbr = UPPER(u.state)";
+        $qry .= " WHERE u.company_id = ?";
+        $qry .= " AND u.id = ?";
+        $qry .= " AND u.identity_id = 3";
+        $qry .= " AND u.status != 'deleted'";
+        
+        $d['employee'] = $this->Db->query($qry, $values);
+
+        return [$d];
+	}
+
+    function update($data)
+    {
+        $res = [
+            'status' => 'ok',
+            'message' => null,
+            'data' => $data
+        ];
+
+        $sets = [];
+        $values = [];
+
+        $id = $data['id'];
+
+        $firstName = (array_key_exists('userFirstName', $data)) ?trim($data['userFirstName']) : null;
+        if ($firstName != null) {
+            $sets[] = 'firstname = ?';
+            $values[] = $firstName;
+        }
+
+        $lastName = (array_key_exists('userLastName', $data)) ?trim($data['userLastName']) : null;
+        if ($lastName != null) {
+            $sets[] = 'lastname = ?';
+            $values[] = $lastName;
+        }
+        
+        if (array_key_exists('address', $data)) {
+            $address = trim($data['address']);
+            $sets[] = $address === '' ? 'address = null' : 'address = ?';
+            if ($address !== '') {
+                $values[] = $address;
+            }
+        }
+
+        if (array_key_exists('city', $data)) {
+            $city = trim($data['city']);
+            $sets[] = $city === '' ? 'city = null' : 'city = ?';
+            if ($city !== '') {
+                $values[] = $city;
+            }
+        }
+
+        if (array_key_exists('state', $data)) {
+            $state = trim($data['state']);
+            $sets[] = $state === '' ? 'state = null' : 'state = ?';
+            if ($state !== '') {
+                $values[] = strtoupper($state);
+            }
+        }
+
+        if (array_key_exists('zip', $data)) {
+            $zip = trim($data['zip']);
+            $sets[] = $zip === '' ? 'zip = null' : 'zip = ?';
+            if ($zip !== '') {
+                $values[] = $zip;
+            }
+        }
+
+        $email = null;
+        if (array_key_exists('email', $data)) {
+            $email = trim($data['email']);
+            $sets[] = $email === '' ? 'email = null' : 'email = ?';
+            if ($email !== '') {
+                $values[] = $email;
+            }
+        }
+
+        if (array_key_exists('phone', $data)) {
+            $phone = trim($data['phone']);
+            $sets[] = $phone === '' ? 'phone = null' : 'phone = ?';
+            if ($phone !== '') {
+                $values[] = $phone;
+            }
+        }
+
+        if (array_key_exists('cell', $data)) {
+            $cell = trim($data['cell']);
+            $sets[] = $cell === '' ? 'cell = null' : 'cell = ?';
+            if ($cell !== '') {
+                $values[] = $cell;
+            }
+        }
+
+        if (array_key_exists('gender', $data)) {
+            $gender = trim($data['gender']);
+            $sets[] = $gender === '' ? 'gender = null' : 'gender = ?';
+            if ($gender !== '') {
+                $values[] = $gender;
+            }
+        }
+
+        $timezoneId = (array_key_exists('timezoneId', $data)) ? $data['timezoneId'] : null;
+        if ($timezoneId != null) {
+            $sets[] = 'timezone_id = ?';
+            $values[] = $timezoneId;
+        }
+
+        $status = (array_key_exists('status', $data)) ? $data['status'] : null;
+        if ($status != null) {
+            $sets[] = 'status = ?';
+            $values[] = $status;
+        }
+
+        if (count($sets) < 1) {
+            $res['status'] = 'error';
+            $res['message'] = 'data not found';
+            return $res;
+        }
+
+        $sets[] = 'modified = now()';
+
+        if ($email != null && !$this->isFieldValueUnique('email', $email, $id)) {
+            $res['status'] = 'error';
+            $res['message'] = 'email already exists';
+            return $res;
+        }
+
+        $values[] = $id;
+        $values[] = $this->CompanyId;
+
+        $setStr = implode(',', $sets);
+
+        $qry = "update users set $setStr where id = ? and identity_id = 3 and company_id = ?";
+
+        $this->Db->update($qry, $values);
+
+        return $res;
+    }
+
+    function getWorkdays($data) {
+        $userId = $data['userId'];
+        $d = ['workDays' => []];
+
+        //// Get workdays
+        $qry = "select w.id as weekday_id, w.no, w.day";
+        $qry .= " ,ew.user_id";
+        $qry .= " from weekdays as w";
+        $qry .= " left join employee_weekdays as ew on ew.weekday_id = w.id and ew.user_id = ?";
+
+        $values = [$userId];
+        $d['workDays'] = $this->Db->query($qry, $values);
+
+        return $d;
+    }
+
+    function setEmployeeWorkdays($data) {
+
+        $userId = $data['userId'];
+        $weekdayIds = $data['weekdayIds'];
+
+        $qry = "delete from employee_weekdays where user_id = ?;";
+        $this->Db->delete($qry,[$userId]);
+
+        $idStr = implode(',',$weekdayIds);
+        $qry = "select id from weekdays where id in ($idStr);";
+        $values = [];
+
+        $sets = [];
+
+        $rows = $this->Db->query($qry,$values);
+        foreach ($rows as $row) {
+            $sets[] = "($userId,$row[id])";
+        }
+
+        if (count($sets) < 1){
+            return;
+        }
+
+        $setStr = implode(',',$sets);
+
+        $qry = "insert into employee_weekdays (`user_id`,`weekday_id`) values $setStr;";
+        $this->Db->insert($qry,[]);
+
+        return;
+    }
+
+    function getSkills($data) {
+        $userId = $data['userId'];
+        $d = ['skills' => []];
+
+        //// Get skills
+        $qry = "select s.id as skill_id,s.name,s.status";
+        $qry .= " ,es.user_id ";
+        $qry .= " from skills as s";
+        $qry .= " left join employee_skills as es on es.skill_id = s.id and es.user_id = ?";
+        $qry .= " where s.company_id = ?";
+
+        $values = [$userId, $this->CompanyId];
+        $d['skills'] = $this->Db->query($qry, $values);
+
+        return $d;
+    }
+
+    function setEmployeeSkills($data) {
+
+        $userId = $data['userId'];
+        $skillIds = $data['skillIds'];
+
+        $qry = "delete from employee_skills where user_id = ?;";
+        $this->Db->delete($qry,[$userId]);
+
+        $idStr = implode(',',$skillIds);
+        $qry = "select id from skills where id in ($idStr) and company_id = ?;";
+        $values = [$this->CompanyId];
+
+        $sets = [];
+
+        $rows = $this->Db->query($qry,$values);
+        foreach ($rows as $row) {
+            $sets[] = "($userId,$row[id])";
+        }
+
+        if (count($sets) < 1){
+            return;
+        }
+
+        $setStr = implode(',',$sets);
+
+        $qry = "insert into employee_skills (`user_id`,`skill_id`) values $setStr;";
+        $this->Db->insert($qry,[]);
+
+        return;
+    }
+
 }
 ?>

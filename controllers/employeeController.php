@@ -63,4 +63,66 @@ class Employee {
 		$this->Res['data'] = $this->Employee->assignments($data);
 		return $this->Res;
 	}
+
+	function fetch($data = null)
+	{
+		$this->Res['data'] = $this->Employee->fetch($data);
+		return $this->Res;
+	}
+
+	function update($data = null)
+	{
+		return $this->Employee->update($data['users'][0]);
+	}
+
+	public function workDays($data) {
+		switch ($_SERVER["REQUEST_METHOD"]) {
+			case 'GET':
+				$this->Res['data'] = $this->Employee->getWorkdays($data);
+				return $this->Res;
+				break;
+
+			case 'POST':
+				$ret = $this->Employee->setEmployeeWorkdays($data['employeeWorkDays'][0]);
+				if ($ret != null) {
+					$this->Res['status'] = 'error';
+					$this->Res['message'] = $ret;
+				}
+				return $this->Res;
+				break;
+			
+			default:
+				$this->Res['code'] = 500;
+				$this->Res['status'] = 'error';
+				$this->Res['message'] = 'Request method not supported.';
+				return $this->Res;
+				break;
+		}
+	}
+
+	public function skills($data) {
+		switch ($_SERVER["REQUEST_METHOD"]) {
+			case 'GET':
+				$this->Res['data'] = $this->Employee->getSkills($data);
+				return $this->Res;
+				break;
+
+			case 'POST':
+				$ret = $this->Employee->setEmployeeSkills($data['employeeSkills'][0]);
+				if ($ret != null) {
+					$this->Res['status'] = 'error';
+					$this->Res['message'] = $ret;
+				}
+				return $this->Res;
+				break;
+			
+			default:
+				$this->Res['code'] = 500;
+				$this->Res['status'] = 'error';
+				$this->Res['message'] = 'Request method not supported.';
+				return $this->Res;
+				break;
+		}
+	}
+
 }

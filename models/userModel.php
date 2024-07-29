@@ -72,6 +72,9 @@ class UserModel
 		$roleId = $data['roleId'];
 		$identityId = $data['identityId'];
 		$clientId = (array_key_exists('clientId', $data)) ? $data['clientId'] : null;
+        $phone = (array_key_exists('phone', $data)) ? $data['phone'] : null;
+        $cell = (array_key_exists('cell', $data)) ? $data['cell'] : null;
+        $gender = (array_key_exists('gender', $data)) ? strtolower($data['gender']) : 'male';
 
 		if (!$this->isEmailUnique($email)) {
 			return 'Email is already in use';
@@ -88,14 +91,18 @@ class UserModel
 
 		$p = md5($p);
 
-		$qry = "insert into users (`company_id`,`identity_id`,`client_id`,`firstname`,`lastname`,`email`,`role_id`,`password`) values (?,?,?,?,?,?,?,?);";
-		$values = [$this->CompanyId,$identityId,$clientId,$firstName, $lastName, $email, $roleId, $p];
+		$qry = "insert into users (`company_id`,`identity_id`,`client_id`,`firstname`,`lastname`,`phone`,`cell`,`email`,`role_id`,`gender`,`password`) values (?,?,?,?,?,?,?,?,?,?,?);";
+		$values = [$this->CompanyId,$identityId,$clientId,$firstName, $lastName, $phone, $cell, $email, $roleId, $gender, $p];
 
 		$userId = $this->Db->insert($qry, $values);
 
         if ($identityId == 3 && array_key_exists('skillIds',$data)) {
             $this->Skill->setEmployee($userId,$data['skillIds']);
         } 
+
+        if ($identityId == 3 && array_key_exists('workdayIds',$data)) {
+            $this->setEmployeeWorkdays($userId,$data['workdayIds']);
+        }
 
 		return null;
 	}
@@ -292,7 +299,7 @@ class UserModel
         $orderBy = ($qryData['order'] != null ? $qryData['order'] : 'u.firstname ASC');
         $status = ($qryData['status'] != null ? $qryData['status'] : null);
         
-        $qry = "SELECT u.id,u.firstname,u.lastname,u.email,u.sex,u.photo,u.status";
+        $qry = "SELECT u.id,u.firstname,u.lastname,u.email,u.gender,u.photo,u.status";
         $qry .= " ,IF(u.photo IS NULL,CONCAT('$this->AvatarPath','/','$this->DefaultAvatar'),CONCAT('$this->AvatarPath','/',u.photo)) AS avatar";
         $qry .= " FROM users AS u";
         $qry .= " WHERE u.company_id = ?";
@@ -341,6 +348,33 @@ class UserModel
 
         return $d;
 	}
+
+    function setEmployeeWorkdays($userId,$ids) {
+        $qry = "delete from employee_weekdays where user_id = ?;";
+        $this->Db->delete($qry,[$userId]);
+
+        $idStr = implode(',',$ids);
+        $qry = "select id from weekdays where id in ($idStr);";
+        $values = [];
+
+        $sets = [];
+
+        $rows = $this->Db->query($qry,$values);
+        foreach ($rows as $row) {
+            $sets[] = "($userId,$row[id])";
+        }
+
+        if (count($sets) < 1){
+            return;
+        }
+
+        $setStr = implode(',',$sets);
+
+        $qry = "insert into employee_weekdays (`user_id`,`weekday_id`) values $setStr;";
+        $this->Db->insert($qry,[]);
+
+        return;
+    }
 
 }
 
