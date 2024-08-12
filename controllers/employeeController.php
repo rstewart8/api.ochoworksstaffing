@@ -64,6 +64,11 @@ class Employee {
 		return $this->Res;
 	}
 
+	function assignmentDetails($data) {
+		$this->Res['data']['assignments'] = $this->Employee->assignmentDetails($data);
+		return $this->Res;
+	}
+
 	function fetch($data = null)
 	{
 		$this->Res['data'] = $this->Employee->fetch($data);

@@ -122,9 +122,18 @@ class EmployeeModel
         //// Get Workdays
         $workDays = $this->Schedule->unFilledScheduleDays($scheduleId,$history);
         //$workDays = getWorkdays($this->Db,null,$start,$end,$history,$scheduleId);
+        
+        if (count($workDays) < 1) {
+            return $d;
+        }
+        
+        // Start the query
+        $union = "SELECT '" . $workDays[0] . "' AS day";
 
-        //// Find unfilled workdays
-
+        // Append each subsequent date with UNION ALL
+        for ($i = 1; $i < count($workDays); $i++) {
+            $union .= " UNION ALL SELECT '" . $workDays[$i] . "'";
+        }
 
         $workDayCnt = count($workDays);
 
@@ -160,11 +169,40 @@ class EmployeeModel
         $wheres = $qryData['wheres'];
         $separator = $qryData['separator'];
         $values = array_merge($v, $qryData['values']);
-        $orderBy = ($qryData['order'] != null ? $qryData['order'] : 'u.firstname ASC');
+        $orderBy = ($qryData['order'] != null ? $qryData['order'] : 'available_count DESC');
         $status = ($qryData['status'] != null ? $qryData['status'] : null);
 
+        $availableCountSubQry = <<<SQL
+            WITH workdays AS (
+                $union
+            ),
+            filtered_workdays AS (
+                SELECT wd.day
+                FROM workdays wd
+                LEFT JOIN schedule_assignments sa
+                    ON wd.day = sa.date AND sa.user_id = u.id and sa.status = 'active'
+                WHERE sa.date IS NULL
+            )
+            SELECT 
+                COUNT(*) AS record_count
+            FROM 
+                filtered_workdays
+            JOIN 
+                weekdays ON LOWER(weekdays.day) = CASE DAYOFWEEK(filtered_workdays.day)
+                    WHEN 1 THEN 'sunday'
+                    WHEN 2 THEN 'monday'
+                    WHEN 3 THEN 'tuesday'
+                    WHEN 4 THEN 'wednesday'
+                    WHEN 5 THEN 'thursday'
+                    WHEN 6 THEN 'friday'
+                    WHEN 7 THEN 'saturday'
+                END
+            JOIN
+                employee_weekdays ON employee_weekdays.weekday_id = weekdays.id AND employee_weekdays.user_id = u.id
+        SQL;
+
         $qry = "select u.id as user_id,u.firstname, u.lastname";
-        $qry .= " ,(select count(id) from schedule_assignments where user_id = u.id and date in ($workDayStr) and status = 'active') as sa_count";
+        $qry .= " ,($availableCountSubQry) as available_count";
         $qry .= " ,IF(u.photo IS NULL,CONCAT('$this->AvatarPath','/','$this->DefaultAvatar'),CONCAT('$this->AvatarPath','/',u.photo)) AS avatar";
         $qry .= " ,(select count(skill_id) from employee_skills where user_id = u.id and skill_id in ($skillsStr)) as es_count";
         $qry .= " from users u";
@@ -185,7 +223,7 @@ class EmployeeModel
         }
 
         $qry .= " group by u.id";
-        $qry .= " having sa_count < $workDayCnt and es_count = $skillCnt";
+        $qry .= " having available_count > 0 and es_count = $skillCnt";
 
         $c = $this->Db->query($qry, $values);
         $d['count'] = count($c);
@@ -201,6 +239,7 @@ class EmployeeModel
             $availableDays = [];
             $scheduledDays = [];
             $availability = 'partial';
+            $weekdayNos = [];
 
             $userId = $row['user_id'];
             $qry = "select schedule_id,date from schedule_assignments where user_id = ? and status = 'active';";
@@ -212,8 +251,21 @@ class EmployeeModel
                 }
             }
 
+            //// Get user workday no
+            $qry ="select w.no";
+            $qry .= " from employee_weekdays ew";
+            $qry .= " join weekdays w on w.id = ew.weekday_id";
+            $qry .= " where ew.user_id = ?";
+
+            $rows2 = $this->Db->query($qry,[$userId]);
+            foreach($rows2 as $row1) {
+                $weekdayNos[] = $row1['no'];
+            }
+
             foreach($workDays as $day) {
-                if (!in_array($day,$scheduledDays)) {
+                
+                $dayOfWeekNumber = date('w', strtotime($day));
+                if (!in_array($day,$scheduledDays) && in_array($dayOfWeekNumber,$weekdayNos)) {
                     $availableDays[] = $day;
                 }
             }
@@ -323,6 +375,38 @@ class EmployeeModel
         $rows = $this->Db->query($qry,$v);
 
         return ['days' => $rows];
+    }
+
+    function assignmentDetails($data) {
+        $userId = $data['userId'];
+        $start = $data['start'];
+        $end = $data['end'];
+
+        $qry = "select sa.id as schedule_assignment_id,sa.date as schedule_assignment_date";
+        $qry .= ",u.id as user_id, u.firstname, u.lastname";
+        $qry .= ", s.id as schedule_id, s.time_start, s.time_end";
+        $qry .= ", j.id as job_id, j.name as job_name, j.address as job_address, j.city, j.state";
+        $qry .= ", c.name as client_name";
+        $qry .= " from schedule_assignments sa";
+        $qry .= " join users u on u.id = sa.user_id and u.status = 'active'";
+        $qry .= " join schedules s on s.id = sa.schedule_id and s.status = 'active' and s.company_id = ?";
+        $qry .= " join jobs j on j.id = s.job_id and j.status = 'active'";
+        $qry .= " join clients c on c.id = j.client_id";
+        $qry .= " where sa.user_id = ?";
+        $qry .= " and sa.date between ? and ?";
+        $qry .= " and sa.status = 'active'";
+        $qry .= " order by sa.date asc";
+
+        $rows =  $this->Db->query($qry,[$this->CompanyId,$userId,$start,$end]);
+
+        foreach ($rows as &$row) {
+            $row['pretty_start'] = mediumTime($row['time_start']);
+            $row['pretty_end'] = mediumTime($row['time_end']);
+            $row['address'] = prettyAddress($row['job_address'],$row['city'],$row['state'],null);
+        }
+
+        return $rows;
+
     }
 
     function fetch($data){

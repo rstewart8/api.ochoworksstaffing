@@ -376,6 +376,78 @@ class UserModel
         return;
     }
 
+    function getProfile($data=null,$userId) {
+        $qry = "SELECT u.id,u.firstname,u.lastname,u.address,u.city,u.state,u.zip,u.email,u.phone,u.cell,u.gender,u.photo,u.timezone_id";
+        $qry .= " ,IF(u.photo IS NULL,CONCAT('$this->AvatarPath','/','$this->DefaultAvatar'),CONCAT('$this->AvatarPath','/',u.photo)) AS avatar";
+        $qry .= " ,t.name as timezone_name";
+        $qry .= " ,s.name as state_name";
+        $qry .= " FROM users u";
+        $qry .= " left join timezones t on t.id = u.timezone_id";
+        $qry .= " left join states s on lower(s.abbr) = lower(u.state)";
+        $qry .= " where u.id = ?";
+        $qry .= " and u.status = 'active';";
+
+        $rows = $this->Db->query($qry,[$userId]);
+
+        return ['users' => $rows];
+    }
+
+    function updateProfile($data,$userId) {
+
+        $res = [
+            'status' => 'ok',
+            'message' => null,
+            'data' => $data
+        ];
+
+        $firstName = (array_key_exists('userFirstName', $data)) ?trim($data['userFirstName']) : null;
+		$lastName = (array_key_exists('userLastName', $data)) ?trim($data['userLastName']) : null;
+        $email = (array_key_exists('email', $data)) ?trim($data['email']) : null;
+
+        $sets = [];
+        $values = [];
+
+        if ($firstName != null) {
+            $sets[] = 'firstname = ?';
+            $values[] = $firstName;
+        }
+
+		if ($lastName != null) {
+            $sets[] = 'lastname = ?';
+            $values[] = $lastName;
+        }
+
+        if ($email != null) {
+            $sets[] = 'email = ?';
+            $values[] = $email;
+        }
+
+        if (count($sets) < 1) {
+            $res['status'] = 'error';
+            $res['message'] = 'data not found';
+            return $res;
+        }
+
+        $sets[] = 'modified = now()';
+
+        if ($email != null && !$this->isEmailUnique($email, $userId)) {
+            $res['status'] = 'error';
+            $res['message'] = 'email already exists';
+            return $res;
+        }
+
+        $values[] = $userId;
+        $values[] = $this->CompanyId;
+
+        $setStr = implode(',', $sets);
+
+        $qry = "update users set $setStr where id = ? and company_id = ?";
+
+        $this->Db->update($qry, $values);
+
+        return $res;
+    }
+
 }
 
 ?>

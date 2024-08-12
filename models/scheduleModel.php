@@ -215,6 +215,7 @@ class ScheduleModel
             $row['daysCnt'] = $daysCnt;
             $row['daysToAssignCnt'] = $assignedCnt;         
             $row['assignment_status'] = 'pending';
+            $row['totalWorkdays'] = count($days);
 
             $qry = "select s.id, s.name";
             $qry .= " from schedule_skills as ss";
@@ -536,6 +537,8 @@ class ScheduleModel
         $totalDays = 0;
         $filledPerc = 0;
         $employeeIds = [];
+        $workDaysCnt = 0;
+        $scheduleEmployeeCnt = 0;
 
         $rows = $this->Db->query($qry, $values);
 
@@ -545,7 +548,8 @@ class ScheduleModel
             $start = $row['start'];
             $end = $row['end'];
             $eCnt = $row['employee_cnt'];
-            
+            $scheduleEmployeeCnt += $eCnt;
+
             $scheduleIds[] = $scheduleId;
 
             $r = getWorkdays($this->Db,$workdayId,$start,$end,$history);
@@ -553,6 +557,8 @@ class ScheduleModel
             
             $days = array_merge($days,$r);
         }
+
+        $workDaysCnt = count($days);
 
         if (count($scheduleIds) > 0 && count($days) > 0) {
 
@@ -579,10 +585,12 @@ class ScheduleModel
         }
 
         $d = [
+            'scheduleEmployeeCnt' => $scheduleEmployeeCnt,
             'days' => $totalDays,
             'daysFilled' => $totalFilled,
             'filledPerc' => $filledPerc,
-            'employeeCnt' => count($employeeIds)
+            'employeeCnt' => count($employeeIds),
+            'workDaysCnt' => $workDaysCnt
         ];
 
         return $d;
@@ -833,8 +841,7 @@ class ScheduleModel
         $d = [
             'start' => null,
             'workDays' => [],
-            'daysToFill' => [],
-            'daysFilled' => []
+            'workDaysCnt' => 0
         ];
 
         $scheduleId = $data['scheduleId'];
@@ -889,10 +896,13 @@ class ScheduleModel
 
             if ($missing && $filledCnt < $employeeCnt) {
                 $d['workDays'][$day] = $tmp;
+                $d['workDaysCnt']++;
             } elseif ($filled && $filledCnt >= $employeeCnt) {
                 $d['workDays'][$day] = $tmp;
+                $d['workDaysCnt']++;
             } elseif(!$missing && !$filled) {
                 $d['workDays'][$day] = $tmp;
+                $d['workDaysCnt']++;
             }
             
         }
@@ -935,7 +945,13 @@ class ScheduleModel
             }
         }
 
-        return $workdays;
+        $d = [];
+
+        foreach ($workdays as $w){
+            $d[] = $w;
+        }
+
+        return $d;
     }
 
     function deleteScheduleAssignment($data) {
@@ -1058,93 +1074,6 @@ class ScheduleModel
         $this->Db->update($qry,[$scheduleId]);
 
     }
-
-    // function clientReport($data) {
-    //     $d = [
-    //         'count' => 0,
-    //         'clients' => [],
-    //         'requested' => 0,
-    //         'filled' => 0,
-    //         'clientList' => [],
-    //         'requestedList' => [],
-    //         'filledList' => [],
-    //         'maxRequested' => 0
-    //     ];
-
-    //     date_default_timezone_set($this->User['timezoneloc']);
-    //     $now = date('Y-m-d');
-
-    //     $start = array_key_exists('start', $data) ? $data['start'] : $now;
-    //     $end = array_key_exists('end', $data) ? $data['end'] : $now;
-
-    //     $v = [$this->CompanyId,$start,$end,$start,$end,$start,$end];
-
-    //     $qry = "SELECT c.id,c.name";
-    //     $qry .= ",group_concat(s.id) as schedule_ids";
-    //     $qry .= " FROM clients c";
-    //     $qry .= " join schedules s on s.client_id = c.id and s.status = 'active'";
-    //     $qry .= " where s.company_id = ?";
-    //     $qry .= " and (";
-    //     $qry .= " (s.start <= ? and s.end >= ?)";
-    //     $qry .= " or (s.start >= ? and s.start <= ?)";
-    //     $qry .= " or (s.end >= ? and s.end <= ?)";
-    //     $qry .= " )";
-        
-
-    //     $qryData = qryBuilder($data, 'c', 'client');
-
-    //     $offset = $qryData['offset'] * $qryData['limit'];
-    //     $wheres = $qryData['wheres'];
-    //     $separator = $qryData['separator'];
-    //     $values = array_merge($v, $qryData['values']);
-    //     $orderBy = ($qryData['order'] != null ? $qryData['order'] : 'c.name asc');
-    //     $status = ($qryData['status'] != null ? $qryData['status'] : null);
-
-    //     if (count($wheres) > 0) {
-    //         $qry .= " AND (" . implode(" $separator ", $wheres) . ")";
-    //     }
-
-    //     if ($status != null) {
-    //         $values = array_merge($values, [$status]);
-    //         $qry .= " AND c.status = ?";
-    //     } else {
-    //         $qry .= " AND c.status = 'active'";
-    //     }
-
-    //     $qry .= " group by c.id";
-
-    //     $rows = $this->Db->query($qry, $values);
-    //     $count = count($rows);
-
-    //     $qry .= " ORDER BY $orderBy";
-    //     $qry .= " LIMIT $qryData[limit]";
-    //     $qry .= " OFFSET $qryData[offset];";
-
-    //     $maxReq = 0;
-    //     $rows = $this->Db->query($qry, $values);
-    //     foreach ($rows as &$row){
-    //         $qry = "select id from schedule_assignments where schedule_id in ($row[schedule_ids]) and date between ? and ? and status = 'active'";
-    //         $rows2 = $this->Db->query($qry,[$start,$end]);
-    //         $cnt = count($rows2);
-    //         $empCnt = $row['employee_cnt'];
-    //         $row['filled'] = $cnt;
-    //         $d['filled'] += $cnt;
-    //         $d['requested'] += $empCnt;
-    //         $d['clientList'][] = $row['name'];
-    //         $d['requestedList'][] = $empCnt;
-    //         $d['filledList'][] = $cnt;
-
-    //         if ($empCnt > $maxReq) {
-    //             $maxReq = $empCnt;
-    //         }
-    //     }
-
-    //     $d['maxRequested'] = $maxReq;
-    //     $d['count'] = $count;
-    //     $d['clients'] = $rows;
-
-    //     return $d;
-    // }
 
     function reportData($data) {
         $d = [
@@ -1430,6 +1359,26 @@ class ScheduleModel
         $d['filledList'] = $filledList;
 
         return $d;
+    }
+
+    function getNote($data) {
+        $scheduleId = $data['id'];
+        $qry = "select id, notes from schedules where id = ? and status != 'deleted' and company_id = ?;";
+        $values = [$scheduleId, $this->CompanyId];
+
+        return $this->Db->query($qry,$values);
+    }
+
+    function updateNote($data){
+        $scheduleId = $data['id'];
+        $notes = array_key_exists('notes', $data) && trim($data['notes']) != '' ? trim($data['notes']) : null;
+
+        $qry = "update schedules set notes = ?, modified = now() where id = ? and company_id = ?;";
+        $values = [$notes, $scheduleId, $this->CompanyId];
+
+        $this->Db->update($qry,$values);
+
+        return null;
     }
 
 }
