@@ -8,8 +8,15 @@ class User {
 	var $Usr;
 	var $T;
 	var $User;
+	var $Res;
 
 	function __construct($db,$logger=null,$user=null){	
+		$this->Res = [
+			'status' 		=> 'ok',
+			'message'		=> null,
+			'data'			=> []
+		];
+
 		$companyId = ($user != null) ? $user['companyid'] : null;	
 		$this->Logger = $logger;
 		$this->Usr = new UserModel($db,$logger,$companyId);
@@ -113,5 +120,26 @@ class User {
 	 function update($data=null){
 		$clientId = $this->User['clientid'];
 		return $this->Usr->update($data['users'][0],$clientId);
+	 }
+
+	 function profile($data=null){
+		$userId = $this->User['userid'];
+		switch ($_SERVER["REQUEST_METHOD"]) {
+			case 'GET':				
+				$this->Res['data'] = $this->Usr->getProfile($data,$userId);
+				return $this->Res;
+				break;
+
+			case 'PUT':
+				return $this->Res['data'] = $this->Usr->updateProfile($data['users'][0],$userId);
+				break;
+
+			default:
+				$this->Res['code'] = 500;
+				$this->Res['status'] = 'error';
+				$this->Res['message'] = 'Request method not supported.';
+				return $this->Res;
+				break;
+		}
 	 }
 }

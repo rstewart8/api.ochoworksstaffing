@@ -1,0 +1,1 @@
+{"params":{"userId":{"type":"integer","allowNull":false,"properties":[],"required":["employee|skills|post"],"exclude":[],"novalidate":[]},"skillIds":{"type":"array","allowNull":false,"properties":{"arrayItemType":"integer"},"required":["employee|skills|post"],"exclude":[],"novalidate":[]}}}

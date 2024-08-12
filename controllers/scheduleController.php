@@ -168,4 +168,26 @@ class Schedule
 		$this->Res['data'] = $this->Schedule->scheduleStatusByRange($data);
 		return $this->Res;
 	}
+
+	public function notes($data) {
+		switch ($_SERVER["REQUEST_METHOD"]) {
+			case 'GET':
+				$this->Res['data'] = $this->Schedule->getNote($data);
+				return $this->Res;
+				break;
+
+			case 'PUT':
+				foreach ($data['schedules'] as $d) {
+					$this->Schedule->updateNote($d);	
+				}
+				return $this->Res;
+			
+			default:
+				$this->Res['code'] = 500;
+				$this->Res['status'] = 'error';
+				$this->Res['message'] = 'Request method not supported.';
+				return $this->Res;
+				break;
+		}
+	}
 }
