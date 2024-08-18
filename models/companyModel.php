@@ -6,11 +6,15 @@ class CompanyModel
 {
 	var $Logger;
     var $Db;
+    var $AvatarPath;
+    var $DefaultAvatar;
 
 	function __construct($db,$logger=null)
 	{
 		$this->Db = $db;
 		$this->Logger = $logger;
+        $this->AvatarPath = AVATARPATH;
+        $this->DefaultAvatar = DEFAULTAVATAR;
 	}
 
 	function fetch($data,$companyId){
@@ -80,6 +84,24 @@ class CompanyModel
         $qry = "update companys set $setStr where id = ?";
 
         return $this->Db->update($qry, $values);
+    }
+
+    function users($data,$userId,$companyId) {
+        $qry = "select u.id, u.firstname, u.lastname, u.email, u.photo";
+        $qry .= " ,IF(u.photo IS NULL,CONCAT('$this->AvatarPath','/','$this->DefaultAvatar'),CONCAT('$this->AvatarPath','/',u.photo)) AS avatar";
+        $qry .= " ,r.id as role_id, r.name as role_name";
+        $qry .= " from users u";
+        $qry .= " left join roles r on r.id = u.role_id";
+        $qry .= " where u.company_id = ?";
+        $qry .= " and u.id != ?";
+        $qry .= " and u.identity_id = 1";
+        $qry .= " and u.status = 'active';";
+
+        $rows = $this->Db->query($qry,[$companyId,$userId]);
+        return [
+            'count' => count($rows),
+            'users' => $rows
+        ];
     }
 }
 ?>

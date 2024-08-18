@@ -47,8 +47,8 @@ class UserModel
 
 	function isEmailUnique($email, $id = null)
 	{
-		$qry = "select id from users where email = ? and status != 'deleted' and company_id = ?";
-		$values = [trim($email),$this->CompanyId];
+		$qry = "select id from users where email = ? and status != 'deleted'";
+		$values = [trim($email)];
 
 		if ($id != null) {
 			$qry .= " and id != ?";
@@ -127,6 +127,7 @@ class UserModel
         $qry .= " join roles as r on r.id = u.role_id";
 		$qry .= " where u.company_id = ?";
 		$qry .= " and u.client_id = ?";
+        $qry .= " and u.identity_id = 2";
 
         if (count($wheres) > 0) {
             $qry .= " AND (" . implode(" $separator ", $wheres) . ")";
@@ -447,6 +448,57 @@ class UserModel
 
         return $res;
     }
+
+    function getForCompany($data,$userId) {
+
+		$wheres = [];
+        $v = [$this->CompanyId,$userId];
+
+        $qryData = qryBuilder($data, 'u', 'user');
+
+        $offset = $qryData['offset'] * $qryData['limit'];
+        $wheres = $qryData['wheres'];
+        $separator = $qryData['separator'];
+        $values = array_merge($v, $qryData['values']);
+        $orderBy = ($qryData['order'] != null ? $qryData['order'] : 'u.firstname ASC');
+        $status = ($qryData['status'] != null ? $qryData['status'] : null);
+
+        $qry = "select u.id,u.firstname,u.lastname,u.email";
+        $qry .= " ,r.id as role_id, r.name as role_name";
+		$qry .= " from users as u";
+        $qry .= " join roles as r on r.id = u.role_id";
+		$qry .= " where u.company_id = ?";
+		$qry .= " and u.identity_id = 1";
+        $qry .= " and u.id != ?";
+
+        if (count($wheres) > 0) {
+            $qry .= " AND (" . implode(" $separator ", $wheres) . ")";
+        }
+
+        if ($status != null) {
+            $values = array_merge($values, [$status]);
+            $qry .= " AND u.status = ?";
+        } else {
+            $qry .= " AND u.status = 'active'";
+        }
+
+        $c = $this->Db->query($qry, $values);
+        $count = count($c);
+
+        $qry .= " ORDER BY $orderBy";
+        $qry .= " LIMIT $qryData[limit]";
+        $qry .= " OFFSET $qryData[offset];";
+
+        $rows = $this->Db->query($qry, $values);
+
+        $d = [
+            'count' => $count,
+            'users' => $rows,
+        ];
+
+        return $d;
+	}
+
 
 }
 
