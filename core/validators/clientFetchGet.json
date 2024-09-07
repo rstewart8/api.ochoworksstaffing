@@ -1,1 +1,1 @@
-{"params":{"id":{"type":"integer","allowNull":false,"properties":[],"required":["client|fetch|get"],"exclude":[],"novalidate":[]}}}
+{"params":{"id":{"type":"integer","allowNull":false,"properties":[],"required":[],"exclude":[],"novalidate":[]}}}

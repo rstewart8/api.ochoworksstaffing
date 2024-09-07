@@ -51,6 +51,18 @@ class Client
 
 	function fetch($data = null)
 	{
+		$identityId = $this->User['identityid'];
+
+		switch ($identityId) {
+			case '2':
+				$clientId = $this->User['clientid'];
+				$data['id'] = $clientId;
+				break;
+			
+			default:
+				break;
+		}
+		
 		$this->Res['data'] = $this->Client->fetch($data);
 		return $this->Res;
 	}
