@@ -65,7 +65,10 @@ class Employee {
 	}
 
 	function assignmentDetails($data) {
-		$this->Res['data']['assignments'] = $this->Employee->assignmentDetails($data);
+		$identityId = $this->User['identityid'];
+		$userId = ($identityId == 3) ? $this->User['userid'] : null;
+
+		$this->Res['data']['assignments'] = $this->Employee->assignmentDetails($data,$userId);
 		return $this->Res;
 	}
 
@@ -81,9 +84,12 @@ class Employee {
 	}
 
 	public function workDays($data) {
+		$identityId = $this->User['identityid'];
+		$userId = ($identityId == 3) ? $this->User['userid'] : null;
+
 		switch ($_SERVER["REQUEST_METHOD"]) {
 			case 'GET':
-				$this->Res['data'] = $this->Employee->getWorkdays($data);
+				$this->Res['data'] = $this->Employee->getWorkdays($data,$userId);
 				return $this->Res;
 				break;
 
@@ -106,9 +112,12 @@ class Employee {
 	}
 
 	public function skills($data) {
+		$identityId = $this->User['identityid'];
+		$userId = ($identityId == 3) ? $this->User['userid'] : null;
+
 		switch ($_SERVER["REQUEST_METHOD"]) {
 			case 'GET':
-				$this->Res['data'] = $this->Employee->getSkills($data);
+				$this->Res['data'] = $this->Employee->getSkills($data,$userId);
 				return $this->Res;
 				break;
 

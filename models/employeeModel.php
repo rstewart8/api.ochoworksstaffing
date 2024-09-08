@@ -377,8 +377,8 @@ class EmployeeModel
         return ['days' => $rows];
     }
 
-    function assignmentDetails($data) {
-        $userId = $data['userId'];
+    function assignmentDetails($data, $usrId=null) {
+        $userId = ($usrId == null) ? $data['userId'] : $usrId;
         $start = $data['start'];
         $end = $data['end'];
 
@@ -561,8 +561,8 @@ class EmployeeModel
         return $res;
     }
 
-    function getWorkdays($data) {
-        $userId = $data['userId'];
+    function getWorkdays($data,$usrId=null) {
+        $userId = ($usrId == null) ? $data['userId'] : $usrId;
         $d = ['workDays' => []];
 
         //// Get workdays
@@ -608,8 +608,8 @@ class EmployeeModel
         return;
     }
 
-    function getSkills($data) {
-        $userId = $data['userId'];
+    function getSkills($data,$usrId=null) {
+        $userId = ($usrId == null) ? $data['userId'] : $usrId;
         $d = ['skills' => []];
 
         //// Get skills

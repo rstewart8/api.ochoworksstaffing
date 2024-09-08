@@ -176,7 +176,10 @@ class Schedule
 	}
 
 	public function scheduleStatusByRange($data) {
-		$this->Res['data'] = $this->Schedule->scheduleStatusByRange($data);
+		$identityId = $this->User['identityid'];
+		$clientId = ($identityId == 2) ? $this->User['clientid'] : null;
+
+		$this->Res['data'] = $this->Schedule->scheduleStatusByRange($data,$clientId);
 		return $this->Res;
 	}
 

@@ -107,10 +107,14 @@ class UserModel
 		return null;
 	}
 
-	function getForClient($data) {
-
+	function getForClient($data,$clntId=null,$userId=null) {
+        $clientId = ($clntId == null) ? $data['clientId'] : $clntId;
 		$wheres = [];
-        $v = [$this->CompanyId,$data['clientId']];
+        $v = [$this->CompanyId,$clientId];
+
+        if ($userId != null) {
+            $v[] = $userId;
+        }
 
         $qryData = qryBuilder($data, 'u', 'user');
 
@@ -126,7 +130,12 @@ class UserModel
 		$qry .= " from users as u";
         $qry .= " join roles as r on r.id = u.role_id";
 		$qry .= " where u.company_id = ?";
-		$qry .= " and u.client_id = ?";
+        $qry .= " and u.client_id = ?";
+
+        if ($userId != null) {
+            $qry .= " and u.id != ?";
+        }
+
         $qry .= " and u.identity_id = 2";
 
         if (count($wheres) > 0) {

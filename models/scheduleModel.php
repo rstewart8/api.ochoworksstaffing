@@ -1259,7 +1259,7 @@ class ScheduleModel
         return $d;
     }
 
-    function scheduleStatusByRange($data){
+    function scheduleStatusByRange($data,$clientId=null){
         $d = [
             'daysList' => [],
             'days' => [],
@@ -1283,7 +1283,7 @@ class ScheduleModel
         $end = array_key_exists('end', $data) ? $data['end'] : $now;
 
         //// Get all schedules in date range
-        $values = [$this->CompanyId,$start,$end,$start,$end,$start,$end];
+        $values = [$this->CompanyId];
 
         $qry = "select s.id as schedule_id, s.job_id, s.workday_id, s.start, s.end,s.employee_cnt";
         $qry .= " , j.client_id,j.name as job_name";
@@ -1292,12 +1292,19 @@ class ScheduleModel
         $qry .= " join jobs j on j.id = s.job_id and j.status = 'active'";
         $qry .= " join clients c on c.id = j.client_id and c.status = 'active'";
         $qry .= " where s.company_id = ?";
+
+        if ($clientId != null) {
+            $qry .= " and c.id = ?";
+            $values[] = $clientId;
+        }
         $qry .= " and (";
         $qry .= " (s.start <= ? and s.end >= ?)";
         $qry .= " or (s.start >= ? and s.start <= ?)";
         $qry .= " or (s.end >= ? and s.end <= ?)";
         $qry .= " )";
         $qry .= " and s.status = 'active'";
+
+        $values = array_merge($values,[$start,$end,$start,$end,$start,$end]);
 
         $rows = $this->Db->query($qry,$values);
 

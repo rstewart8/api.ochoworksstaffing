@@ -74,7 +74,11 @@ class Client
 
 	function users($data = null)
 	{
-		$this->Res['data'] = $this->Usr->getForClient($data);
+		$identityId = $this->User['identityid'];
+		$clientId = ($identityId == 2) ? $this->User['clientid'] : null;
+		$userId = ($identityId == 2) ? $this->User['userid'] : null;
+
+		$this->Res['data'] = $this->Usr->getForClient($data,$clientId,$userId);
 		return $this->Res;
 	}
 
