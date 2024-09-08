@@ -153,7 +153,18 @@ class Schedule
 	}
 
 	public function clientReportByDay($data) {
-		$this->Res['data'] = $this->Schedule->clientReportByDay($data);
+		$identityId = $this->User['identityid'];
+		$clientId = ($identityId == 2) ? $this->User['clientid'] : null;
+		
+		$this->Res['data'] = $this->Schedule->clientReportByDay($data, $clientId);
+		return $this->Res;
+	}
+
+	public function jobReportByDay($data) {
+		$identityId = $this->User['identityid'];
+		$clientId = ($identityId == 2) ? $this->User['clientid'] : null;
+		
+		$this->Res['data'] = $this->Schedule->jobReportByDay($data, $clientId);
 		return $this->Res;
 	}
 
@@ -165,7 +176,10 @@ class Schedule
 	}
 
 	public function scheduleStatusByRange($data) {
-		$this->Res['data'] = $this->Schedule->scheduleStatusByRange($data);
+		$identityId = $this->User['identityid'];
+		$clientId = ($identityId == 2) ? $this->User['clientid'] : null;
+
+		$this->Res['data'] = $this->Schedule->scheduleStatusByRange($data,$clientId);
 		return $this->Res;
 	}
 

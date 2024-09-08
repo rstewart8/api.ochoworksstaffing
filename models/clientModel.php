@@ -122,6 +122,11 @@ class ClientModel
     }
 
     function fetch($data){
+        $clientId = array_key_exists('id',$data) ? $data['id'] : null;
+
+        if ($clientId == null) {
+            return [];
+        }
 		$wheres = [];
         $v = [$this->CompanyId,$data['id']];
 
