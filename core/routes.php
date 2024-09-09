@@ -8,7 +8,9 @@ require_once(ROOT.'/core/authentication.php');
 
 class Routes
 {
-
+	var $res;
+	var $logger;
+	var $authentication;
 
 	function __construct($db,$logger) {
 		$this->res = [
@@ -79,7 +81,7 @@ class Routes
 
 		//Check in function exists in routes.json
 		if (!array_key_exists($function,$r[$controller])) {
-			$this->error("Invalid Function");
+			$this->error("Invalid Route Function");
 			$this->res['status'] = 'error';
 			return $this->res;
 		}

@@ -508,6 +508,28 @@ class UserModel
         return $d;
 	}
 
+    function updatePhoto($data,$userId) {
+        try {
+            $tempPath = $data[ 'files' ][ 'tmp_name' ];
+            $name = $data['files']['name'];
+            $fileExt = pathinfo($name, PATHINFO_EXTENSION);
+            $uniqueId = uniqid();
+            $fileName = "$uniqueId.$fileExt";
+            $uploadPath = AVATARFILEPATH."/$fileName";
+			$this->Logger->info("Moving file from $tempPath to $uploadPath");
+            move_uploaded_file( $tempPath, $uploadPath );
+            $qry = "update users set photo = ?, modified = now() where id = ? and company_id = ?";
+            $values = [$fileName,$userId, $this->CompanyId];
+            $this->Db->update($qry, $values);
+            
+		} catch (Exception $e) {
+			$this->Logger->error("ERROR: uploading file ".$e->getMessage());
+		}
+
+		return null;
+
+    }
+
 
 }
 
