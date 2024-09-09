@@ -142,4 +142,23 @@ class User {
 				break;
 		}
 	 }
+
+	 function photo($data=null){
+		$userId = $this->User['userid'];
+
+		switch ($_SERVER["REQUEST_METHOD"]) {
+			case 'POST':
+				$this->Res['data'] = $this->Usr->updatePhoto($data,$userId);
+				break;
+
+			default:
+				$this->Res['code'] = 500;
+				$this->Res['status'] = 'error';
+				$this->Res['message'] = 'Request method not supported.';
+				return $this->Res;
+				break;
+		}
+
+		return $this->Res;
+	 }
 }
