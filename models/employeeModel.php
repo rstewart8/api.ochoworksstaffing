@@ -11,8 +11,9 @@ class EmployeeModel
     var $AvatarPath;
     var $DefaultAvatar;
     var $Schedule;
+    var $User;
 
-	function __construct($db,$logger,$companyId,$schedule=null)
+	function __construct($db,$logger,$companyId,$schedule=null,$user=null)
 	{
 		$this->Db = $db;
 		$this->Logger = $logger;
@@ -20,6 +21,7 @@ class EmployeeModel
         $this->DefaultAvatar = DEFAULTAVATAR;
         $this->CompanyId = $companyId;
         $this->Schedule = $schedule;
+        $this->User = $user;
 	}
 
     function isFieldValueUnique($field, $value, $id = null)
@@ -654,6 +656,61 @@ class EmployeeModel
         $this->Db->insert($qry,[]);
 
         return;
+    }
+
+    function forClientByDays($data,$clntId=null) {
+        date_default_timezone_set($this->User['timezoneloc']);
+        $today = date('Y-m-d');
+        
+        $start = (array_key_exists('start',$data)) ? $data['start'] : $today;
+        $end = (array_key_exists('end', $data)) ? $data['end'] : $start;
+        $clientId = ($clntId != null) ? $clntId : $data['clientId'];
+
+        $v = [$clientId,$this->CompanyId,$start,$end];
+
+        $qryData = qryBuilder($data, 'u', 'user');
+
+        $offset = $qryData['offset'] * $qryData['limit'];
+        $wheres = $qryData['wheres'];
+        $separator = $qryData['separator'];
+        $values = array_merge($v, $qryData['values']);
+        $orderBy = ($qryData['order'] != null ? $qryData['order'] : 'u.firstname ASC');
+        $status = ($qryData['status'] != null ? $qryData['status'] : null);
+
+
+        $qry = "SELECT u.id as user_id,u.firstname,u.lastname";
+        $qry .= " ,IF(u.photo IS NULL,CONCAT('$this->AvatarPath','/','$this->DefaultAvatar'),CONCAT('$this->AvatarPath','/',u.photo)) AS avatar";
+        $qry .= " ,sa.date";
+        $qry .= " ,j.id as job_id,j.name as job_name";
+        $qry .= " FROM users u";
+        $qry .= " join schedule_assignments sa on sa.user_id = u.id and sa.status = 'active'";
+        $qry .= " join schedules s on s.id = sa.schedule_id";
+        $qry .= " join jobs j on j.id = s.job_id and j.client_id = ?";
+        $qry .= " where u.company_id = ?";
+        $qry .= " and sa.date >= ?";
+        $qry .= " and sa.date <= ?";
+
+        if (count($wheres) > 0) {
+            $qry .= " AND (" . implode(" $separator ", $wheres) . ")";
+        }
+
+        $qry .= " AND u.status = 'active'";
+
+        $c = $this->Db->query($qry, $values);
+        $count = count($c);
+
+        $qry .= " ORDER BY $orderBy";
+        $qry .= " LIMIT $qryData[limit]";
+        $qry .= " OFFSET $qryData[offset];";
+
+        $rows = $this->Db->query($qry, $values);
+
+        $d = [
+            'count' => $count,
+            'users' => $rows,
+        ];
+
+        return $d;
     }
 
 }

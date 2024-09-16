@@ -27,7 +27,7 @@ class Employee {
 		$this->CompanyId = $user['companyid'];
 		$this->Usr = new UserModel($db,$logger,$user['companyid']);
 		$this->Schedule = new ScheduleModel($db,$logger,$this->CompanyId,null,null);
-		$this->Employee = new EmployeeModel($db,$logger,$user['companyid'],$this->Schedule);
+		$this->Employee = new EmployeeModel($db,$logger,$user['companyid'],$this->Schedule,$this->User);
 		
 	}
 
@@ -137,6 +137,24 @@ class Employee {
 				return $this->Res;
 				break;
 		}
+	}
+
+	function forClientByDays($data){
+
+		$identityId = $this->User['identityid'];
+		$clientId = null;
+
+		switch ($identityId) {
+			case '2':
+				$clientId = $this->User['clientid'];
+				break;
+			
+			default:
+				break;
+		}
+
+		$this->Res['data'] = $this->Employee->forClientByDays($data, $clientId);
+		return $this->Res;
 	}
 
 }
