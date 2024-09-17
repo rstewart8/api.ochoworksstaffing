@@ -31,7 +31,7 @@ class Schedule
 		$this->CompanyId = $user['companyid'];
 		$this->ClientId = $user['clientid'];
 		$this->Schedule = new ScheduleModel($db, $logger, $user['companyid'], $this->ClientId, $user);
-		$this->Employee = new EmployeeModel($db, $logger, $user['companyid'],$this->Schedule);
+		$this->Employee = new EmployeeModel($db, $logger, $user['companyid'],$this->Schedule,$this->User);
 	}
 
 	public function list($data = null)

@@ -26,7 +26,7 @@ class ScheduleModel
         $this->CompanyId = $companyId;
         $this->ClientId = $clientId;
         $this->Skill = new SkillModel($db, $logger, $companyId);
-        $this->Employee = new EmployeeModel($db, $logger, $companyId);
+        $this->Employee = new EmployeeModel($db, $logger, $companyId,null,$user);
         $this->User = $user;
         $this->AvatarPath = AVATARPATH;
         $this->DefaultAvatar = DEFAULTAVATAR;
