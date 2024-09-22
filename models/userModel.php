@@ -530,6 +530,22 @@ class UserModel
 
     }
 
+    function updatePassword($data,$usrId=null)
+	{
+		$password = trim($data['password']);
+        $passwordMatch = trim($data['match']);
+        $userId = ($usrId != null) ? $usrId : $data['userId'];
+
+		$p = md5($password);
+
+		$qry = "update users set password = ?, modified = now() where company_id = ? and id = ? and status = 'active';";
+		$values = [$p,$this->CompanyId,$userId];
+
+		$userId = $this->Db->update($qry, $values);
+
+		return null;
+	}
+
 
 }
 

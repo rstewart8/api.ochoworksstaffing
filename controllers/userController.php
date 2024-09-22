@@ -161,4 +161,25 @@ class User {
 
 		return $this->Res;
 	 }
+
+	 function resetPassword($data) {
+		$identityId = $this->User['identityid'];
+		$roleId = $this->User['userrole'];
+		$userId = ($identityId == 3 || $roleId == 3) ? $this->User['userid'] : null;
+
+		$d = $data['users'][0];
+
+		if ($userId == null && !array_key_exists('userId',$d)) {
+			$userId = $this->User['userid'];
+		}
+
+		$r = $this->Usr->updatePassword($d,$userId);
+
+		if ($r != null) {
+			$this->Res['status'] = 'error';
+			$this->Res['message'] = $r;
+		}
+
+		return $this->Res;
+	 }
 }
