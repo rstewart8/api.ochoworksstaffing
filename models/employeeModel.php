@@ -275,10 +275,16 @@ class EmployeeModel
             if (count($availableDays) == count($workDays)) {
                 $availability = 'all';
             }
+
+            $notifications = [];
+
+            $qry = "select notification_queue_id,which,message,status from user_schedule_notifications where user_id = ? and schedule_id = ? order by id desc limit 1;";
+            $notifications = $this->Db->query($qry,[$userId,$scheduleId]);
             
             $row['assignedDays'] = $assignedDays;
             $row['availableDays'] = $availableDays;
             $row['availability'] = $availability;
+            $row['notifications'] = $notifications;
         }
 
         $d['employees'] = $rows;

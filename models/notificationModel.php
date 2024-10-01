@@ -33,6 +33,7 @@ class NotificationModel
             $qry .= " left join company_notifications cn on cn.notification_id = n.id and cn.status = 'active'";
         } elseif ($which == 'employee') {
             $qry .= " left join employee_notifications en on en.notification_id = n.id and en.status = 'active'";
+            $qry .= " join company_notifications cn on cn.notification_id = n.id and cn.status = 'active'";
         }
         $qry .= " where n.status = 'active'";
         $qry .= " order by n.id asc;";
@@ -134,138 +135,47 @@ class NotificationModel
         return null;
     }
 
-	// function list($data){
-	// 	$wheres = [];
-    //     $v = [$this->CompanyId];
+	function queueUp($data) {
+        $userId = (array_key_exists('userId', $data['data'])) ? $data['data']['userId'] : null;
+        $scheduleId = (array_key_exists('scheduleId', $data['data'])) ? $data['data']['scheduleId'] : null;
+        $which = (array_key_exists('which',$data)) ? $data['which'] : null;
+        $data = (array_key_exists('data', $data)) ? json_encode($data['data']) : null;
 
-    //     $qryData = qryBuilder($data, 's', 'skill');
+        if ($userId != null) {
+            $qry = "select id from users where id = ? and company_id = ? and status = 'active';";
+            $rows = $this->Db->query($qry,[$userId,$this->CompanyId]);
+            if (count($rows) < 1) {
+                $this->Logger->info("invalid notification user");
+                return null;
+            }
+        }
 
-    //     $offset = $qryData['offset'] * $qryData['limit'];
-    //     $wheres = $qryData['wheres'];
-    //     $separator = $qryData['separator'];
-    //     $values = array_merge($v, $qryData['values']);
-    //     $orderBy = ($qryData['order'] != null ? $qryData['order'] : 's.name ASC');
-    //     $status = ($qryData['status'] != null ? $qryData['status'] : null);
+        if ($scheduleId != null) {
+            $qry = "select id from schedules where id = ? and company_id = ? and status = 'active';";
+            $rows = $this->Db->query($qry,[$scheduleId,$this->CompanyId]);
+            if (count($rows) < 1) {
+                $this->Logger->info("invalid notification schedule");
+                return null;
+            }
+        }
 
-    //     $qry = "SELECT s.*";
-    //     $qry .= " FROM skills AS s";
-    //     $qry .= " WHERE s.company_id = ?";
+        $qry = "select notification_queue_id from user_schedule_notifications where user_id = ? and schedule_id = ? and which = ? and status = 'pending' order by id desc limit 1;";
+        $rows = $this->Db->query($qry,[$userId,$scheduleId,$which]);
+        
+        if (count($rows) > 0) {
+            $this->Logger->info("duplicate notification");
+            return $rows[0]['notification_queue_id'];
+        }
 
-    //     if (count($wheres) > 0) {
-    //         $qry .= " AND (" . implode(" $separator ", $wheres) . ")";
-    //     }
+        $qry = "insert into notification_queue (which,data) values (?,?);";
+        $notificationQueueId = $this->Db->insert($qry,[$which,$data]);
 
-    //     if ($status != null) {
-    //         $values = array_merge($values, [$status]);
-    //         $qry .= " AND s.status = ?";
-    //     } else {
-    //         $qry .= " AND s.status = 'active'";
-    //     }
+        if ($userId != null && $scheduleId != null && $which != null && $notificationQueueId != null) {
+            $qry = "insert into user_schedule_notifications (user_id,schedule_id,notification_queue_id,which) values(?,?,?,?);";
+            $this->Db->insert($qry,[$userId,$scheduleId,$notificationQueueId,$which]);
+        }
 
-    //     $c = $this->Db->query($qry, $values);
-    //     $count = count($c);
-
-    //     $qry .= " ORDER BY $orderBy";
-    //     $qry .= " LIMIT $qryData[limit]";
-    //     $qry .= " OFFSET $qryData[offset];";
-
-    //     $rows = $this->Db->query($qry, $values);
-
-    //     $d = [
-    //         'count' => $count,
-    //         'skills' => $rows,
-    //     ];
-
-    //     return $d;
-	// }
-
-    // function create($data)
-    // {
-    //     $res = [
-    //         'status' => 'ok',
-    //         'message' => null,
-    //         'data' => null
-    //     ];
-
-    //     $name = trim($data['name']);
-
-    //     if (!$this->isFieldValueUnique('name', $name)) {
-    //         $res['status'] = 'error';
-    //         $res['message'] =  "Skill alreay exists";
-    //         return $res;
-    //     }
-
-    //     $values = [$this->CompanyId, $name];
-    //     $qry = "insert into skills (`company_id`,`name`) VALUES (?,?)";
-
-    //     $skillId = $this->Db->insert($qry, $values);
-
-    //     $res['data'] = [$skillId];
-
-    //     return $res;
-    // }
-
-    // function delete($id) {
-    //     $qry = "update skills set status = 'deleted', modified=now() where id = ? and company_id = ?;";
-    //     $values = [$id,$this->CompanyId];
-
-    //     $this->Db->update($qry,$values);
-
-    //     return true;
-    // }
-
-    // function setSchedule($scheduleId,$ids) {
-    //     $qry = "delete from schedule_skills where schedule_id = ?;";
-    //     $this->Db->delete($qry,[$scheduleId]);
-
-    //     $idStr = implode(',',$ids);
-    //     $qry = "select id from skills where company_id = ? and id in ($idStr) and status = 'active';";
-    //     $values = [$this->CompanyId];
-
-    //     $sets = [];
-
-    //     $rows = $this->Db->query($qry,$values);
-    //     foreach ($rows as $row) {
-    //         $sets[] = "($scheduleId,$row[id])";
-    //     }
-
-    //     if (count($sets) < 1){
-    //         return;
-    //     }
-
-    //     $setStr = implode(',',$sets);
-
-    //     $qry = "insert into schedule_skills (`schedule_id`,`skill_id`) values $setStr;";
-    //     $this->Db->insert($qry,[]);
-
-    //     return;
-    // }
-
-    // function setEmployee($userId,$ids) {
-    //     $qry = "delete from employee_skills where user_id = ?;";
-    //     $this->Db->delete($qry,[$userId]);
-
-    //     $idStr = implode(',',$ids);
-    //     $qry = "select id from skills where company_id = ? and id in ($idStr) and status = 'active';";
-    //     $values = [$this->CompanyId];
-
-    //     $sets = [];
-
-    //     $rows = $this->Db->query($qry,$values);
-    //     foreach ($rows as $row) {
-    //         $sets[] = "($userId,$row[id])";
-    //     }
-
-    //     if (count($sets) < 1){
-    //         return;
-    //     }
-
-    //     $setStr = implode(',',$sets);
-
-    //     $qry = "insert into employee_skills (`user_id`,`skill_id`) values $setStr;";
-    //     $this->Db->insert($qry,[]);
-
-    //     return;
-    // }
+        return $notificationQueueId;
+    }
 }
 ?>

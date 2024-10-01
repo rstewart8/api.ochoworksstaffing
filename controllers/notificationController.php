@@ -62,4 +62,9 @@ class Notification {
         return $this->Res;
     }
 
+	function queueUp($data) {
+		$this->Res['data'] = $this->Notification->queueUp($data['notifications'][0]);
+		return $this->Res;
+	}
+
 }

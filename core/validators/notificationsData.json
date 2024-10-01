@@ -1,0 +1,1 @@
+{"params":{"userId":{"type":"integer","allowNull":false,"properties":[],"required":[],"exclude":[],"novalidate":[]},"scheduleId":{"type":"integer","allowNull":false,"properties":[],"required":[],"exclude":[],"novalidate":[]}}}
