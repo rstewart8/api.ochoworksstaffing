@@ -276,6 +276,16 @@ class EmployeeModel
                 $availability = 'all';
             }
 
+            $notificationsList = [];
+            $qry = "SELECT n.id as notification_id, n.notification_type, n.name as notification_name";
+            $qry .= " FROM employee_notifications en";
+            $qry .= " join notifications n on n.id = en.id";
+            $qry .= " join company_notifications cn on cn.notification_id = en.notification_id and cn.status = 'active'";
+            $qry .= " where en.user_id = ?";
+            $qry .= " and en.status = 'active'";
+
+            $notificationsList = $this->Db->query($qry,[$userId]);
+
             $notifications = [];
 
             $qry = "select notification_queue_id,which,message,status from user_schedule_notifications where user_id = ? and schedule_id = ? order by id desc limit 1;";
@@ -285,6 +295,7 @@ class EmployeeModel
             $row['availableDays'] = $availableDays;
             $row['availability'] = $availability;
             $row['notifications'] = $notifications;
+            $row['notificationsList'] = $notificationsList;
         }
 
         $d['employees'] = $rows;
