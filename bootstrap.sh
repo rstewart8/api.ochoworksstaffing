@@ -16,6 +16,8 @@ MYSQLPASSWORD="password"
 
 ## create the repo owner user
 sudo useradd -d "/home/${REPOOWNER}" -m "${REPOOWNER}" -p "${PASSWORD}"
+sudo usermod --shell "/bin/bash ${REPOOWNER}"
+sudo usermod -aG www-data "${REPOOWNER}"
 
 # update / upgrade
 sudo apt-get update
@@ -23,14 +25,18 @@ sudo apt-get -y upgrade
 
 # install apache 2.5 and php 
 sudo apt-get install -y apache2
-sudo apt -y install php7.4
-sudo apt-get install -y php7.4-json
-sudo apt-get install -y php7.4-mysqlnd
-sudo apt-get install -y php7.4-xml
-sudo apt-get install -y php7.4-intl
-sudo apt-get install -y php7.4-mbstring
-sudo apt-get install -y php7.4-curl
 
+sudo apt-get install software-properties-common
+sudo add-apt-repository ppa:ondrej/php
+sudo apt-get update
+
+sudo apt -y install php8.3
+sudo apt-get install -y php8.3-json
+sudo apt-get install -y php8.3-mysqlnd
+sudo apt-get install -y php8.3-xml
+sudo apt-get install -y php8.3-intl
+sudo apt-get install -y php8.3-mbstring
+sudo apt-get install -y php8.3-curl
 # setup hosts file
 VHOST=$(cat <<EOF
 <VirtualHost *:80>
@@ -59,6 +65,7 @@ suphp do chown www-data:www-data -R "/var/log/${APPNAMESHORT}"
 sudo chown www-data:www-data "/var/log/${APPNAMESHORT}/logger.log"
 sudo chown www-data:www-data "/var/log/${APPNAMESHORT}/error.log"
 sudo chown "${REPOOWNER}:${REPOOWNER}" -R "/etc/${APPNAME}"
+sudo chmod 775 "/var/log/${APPNAMESHORT}/*.log"
 
 sudo mkdir "/var/spool/${APPNAMESHORT}" 
 sudo mkdir "/var/spool/${APPNAMESHORT}/attachments"

@@ -15,13 +15,15 @@ class NotificationModel
         $this->CompanyId = $companyId;
 	}
 
-    function list($data,$whch=null) {
+    function list($data,$whch=null,$userId=null) {
         $which = ($whch != null) ? $whch : null;
 
         if ($which == null) {
-            $which = (array_key_exists('which',$data)) ? $data['which'] : 'company';
+            $which = (array_key_exists('which',$data)) ? $data['which'] : 'employee';
         }
 
+        $values = [$this->CompanyId];
+        
         $qry = "select n.id, n.notification_type, n.name";
         if ($which == 'company') {
             $qry .= ",cn.id as company_notification_id";
@@ -30,15 +32,16 @@ class NotificationModel
         }
         $qry .= " from notifications n";
         if ($which == 'company') {
-            $qry .= " left join company_notifications cn on cn.notification_id = n.id and cn.status = 'active'";
+            $qry .= " left join company_notifications cn on cn.notification_id = n.id and cn.status = 'active' and cn.company_id = ?";
         } elseif ($which == 'employee') {
-            $qry .= " left join employee_notifications en on en.notification_id = n.id and en.status = 'active'";
-            $qry .= " join company_notifications cn on cn.notification_id = n.id and cn.status = 'active'";
+            $qry .= " left join employee_notifications en on en.notification_id = n.id and en.status = 'active' and en.user_id = ?";
+            $qry .= " join company_notifications cn on cn.notification_id = n.id and cn.status = 'active' and cn.company_id = ?";
+            array_unshift($values,$userId);
         }
         $qry .= " where n.status = 'active'";
         $qry .= " order by n.id asc;";
         return [
-            'notifications' => $this->Db->query($qry,[])
+            'notifications' => $this->Db->query($qry,$values)
         ];
     }
 
@@ -69,8 +72,8 @@ class NotificationModel
         }
 
         if ($companyNotificationId) {
-            $qry = "update company_notifications set status = ?, modified = now() where id = ?;";
-            $this->Db->update($qry,[$companyNotificationStatus,$companyNotificationId]);
+            $qry = "update company_notifications set status = ?, modified = now() where id = ? and company_id = ?;";
+            $this->Db->update($qry,[$companyNotificationStatus,$companyNotificationId,$this->CompanyId]);
         } else {
             $qry = "insert into company_notifications (company_id,notification_id) values (?,?);";
             $this->Db->insert($qry,[$this->CompanyId,$notificationId]);
@@ -142,9 +145,16 @@ class NotificationModel
         $data = (array_key_exists('data', $data)) ? json_encode($data['data']) : null;
 
         if ($userId != null) {
-            $qry = "select id from users where id = ? and company_id = ? and status = 'active';";
-            $rows = $this->Db->query($qry,[$userId,$this->CompanyId]);
-            if (count($rows) < 1) {
+            $qry = "select u.id";
+            $qry .= ",en.notification_id";
+            $qry .= " from users u";
+            $qry .= " join employee_notifications en on en.user_id = u.id and en.status = 'active'";
+            $qry .= " join company_notifications cn on cn.notification_id = en.notification_id and cn.company_id = ? and cn.status = 'active'";
+            $qry .= " where u.id = ?";
+            $qry .= " and u.company_id = ?";
+            $qry .= " and u.status = 'active';";
+            $users = $this->Db->query($qry,[$this->CompanyId,$userId,$this->CompanyId]);
+            if (count($users) < 1) {
                 $this->Logger->info("invalid notification user");
                 return null;
             }
@@ -171,8 +181,11 @@ class NotificationModel
         $notificationQueueId = $this->Db->insert($qry,[$which,$data]);
 
         if ($userId != null && $scheduleId != null && $which != null && $notificationQueueId != null) {
-            $qry = "insert into user_schedule_notifications (user_id,schedule_id,notification_queue_id,which) values(?,?,?,?);";
-            $this->Db->insert($qry,[$userId,$scheduleId,$notificationQueueId,$which]);
+            foreach ($users as $user) {
+                $notificationId = $user['notification_id'];
+                $qry = "insert into user_schedule_notifications (user_id,schedule_id,notification_id,notification_queue_id,which) values(?,?,?,?,?);";
+                $this->Db->insert($qry,[$userId,$scheduleId,$notificationId,$notificationQueueId,$which]);
+            }
         }
 
         return $notificationQueueId;

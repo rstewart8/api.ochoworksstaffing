@@ -386,7 +386,7 @@ class UserModel
         return;
     }
 
-    function getProfile($data=null,$userId) {
+    function getProfile($data,$userId) {
         $qry = "SELECT u.id,u.firstname,u.lastname,u.address,u.city,u.state,u.zip,u.email,u.phone,u.cell,u.gender,u.photo,u.timezone_id";
         $qry .= " ,IF(u.photo IS NULL,CONCAT('$this->AvatarPath','/','$this->DefaultAvatar'),CONCAT('$this->AvatarPath','/',u.photo)) AS avatar";
         $qry .= " ,t.name as timezone_name";

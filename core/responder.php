@@ -3,6 +3,9 @@
 *
 */
 class Res {
+	var $res;
+	var $logger;
+
 	function __construct($logger)
 	{
 		$this->res = [
@@ -13,7 +16,7 @@ class Res {
 		$this->logger = $logger;
 	}
 
-	public function send($code=200,$status,$msg=null,$data=[]){
+	public function send($code=200,$status=null,$msg=null,$data=[]){
 		$this->res['status']	= $status;
 		$this->res['msg']		= $msg;
 		$this->res['data']		= $data;

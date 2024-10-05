@@ -27,8 +27,10 @@ class Notification {
 		$which = null;
 
 		$identityId = $this->User['identityid'];
+		$userId = null;
 		switch ($identityId) {
 			case '3':
+				$userId = $this->User['userid'];
 				$which = 'employee';
 				break;
 			
@@ -37,7 +39,7 @@ class Notification {
 				break;
 		}
 
-		$this->Res['data'] = $this->Notification->list($data,$which);
+		$this->Res['data'] = $this->Notification->list($data,$which,$userId);
 		return $this->Res;
 	}
 

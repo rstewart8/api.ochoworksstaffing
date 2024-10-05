@@ -116,6 +116,15 @@ CREATE TABLE `skills` (
   UNIQUE KEY `id_UNIQUE` (`id`)
 );
 
+INSERT INTO skills (`company_id`,`name`) VALUES 
+(1,'framing'),
+(1,'carpentry'),
+(1,'drywall'),
+(1,'construction cleanup'),
+(1,'concrete'),
+(1,'paint'),
+(1,'landscape');
+
 CREATE TABLE `schedule_skills` (
   `schedule_id` int NOT NULL,
   `skill_id` int NOT NULL

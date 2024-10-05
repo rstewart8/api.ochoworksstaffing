@@ -13,6 +13,7 @@ CREATE TABLE `user_schedule_notifications` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `user_id` INT NOT NULL,
   `schedule_id` INT NOT NULL,
+  `notification_id` INT NOT NULL,
   `notification_queue_id` INT NOT NULL,
   `which` varchar(32) NOT NULL, 
   `message` varchar(512) DEFAULT NULL,
